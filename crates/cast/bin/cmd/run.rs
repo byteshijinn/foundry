@@ -87,7 +87,6 @@ pub struct RunArgs {
     #[arg(long)]
     pub alphanet: bool,
 
-    #[arg(long, short, alias = "gs")]
     /// If generate a file with the signatures of the functions and events of the project.
     /// The file will be saved in the foundry cache directory.
     ///

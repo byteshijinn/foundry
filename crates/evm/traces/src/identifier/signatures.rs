@@ -6,6 +6,7 @@ use foundry_common::{
     selectors::{OpenChainClient, SelectorType},
 };
 use serde::{Deserialize, Serialize};
+use serde_json;
 use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,
@@ -23,14 +24,17 @@ pub struct CachedSignatures {
 
 impl CachedSignatures {
     #[instrument(target = "evm::traces")]
-    pub fn load(
-        cache_path: PathBuf
-    ) -> CachedSignatures {
+    pub fn load(cache_path: PathBuf) -> CachedSignatures {
         let path = cache_path.join("signatures");
         let cached = if path.is_file() {
-            fs::read_json_file(&cache_path)
-                .map_err(|err| warn!(target: "evm::traces", ?path, ?err, "failed to read cache file"))
-                .unwrap_or_default()
+            let cache_contents = std::fs::read_to_string(path.clone()).unwrap();
+            match serde_json::from_str::<CachedSignatures>(&cache_contents) {
+                Ok(existed_signatures) => existed_signatures,
+                Err(e) => {
+                    println!("parse cached local signatures file error: {}", e);
+                    CachedSignatures::default()
+                }
+            }
         } else {
             if let Err(err) = std::fs::create_dir_all(cache_path) {
                 warn!(target: "evm::traces", "could not create signatures cache dir: {:?}", err);
@@ -66,9 +70,7 @@ impl SignaturesIdentifier {
             let path = cache_path.join("signatures");
             trace!(target: "evm::traces", ?path, "reading signature cache");
             let cached = CachedSignatures::load(cache_path.clone());
-            Self {
-                cached, cached_path: Some(path), unavailable: HashSet::new(), client
-            }
+            Self { cached, cached_path: Some(path), unavailable: HashSet::new(), client }
         } else {
             Self {
                 cached: Default::default(),

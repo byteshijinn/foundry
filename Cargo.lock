@@ -3985,6 +3985,7 @@ dependencies = [
  "revm-inspectors",
  "rustc-hash",
  "serde",
+ "serde_json",
  "solang-parser",
  "tempfile",
  "tokio",
